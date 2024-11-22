@@ -23,4 +23,8 @@ static Expense fromJson(Map<String, dynamic> json) {
   );
 }
 
+ @override
+  String toString() =>
+      'Expense(date: $date, description: $description, amount: $amount)';
+
 }
