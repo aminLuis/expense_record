@@ -58,6 +58,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
     _descriptionController.clear();
     _amountController.clear();
     _loadDailyExpenses();
+    FocusScope.of(context).unfocus();
   }    
 
   void _editExpense(Expense expense) {
@@ -108,6 +109,12 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
                     );
                     await FileStorage.saveExpenses(allExpenses);
                     _loadDailyExpenses();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Expense "${expense.description}" edit successfully!'),
+                      duration: Duration(seconds: 3),
+                    )
+                  );
                   }
                 }
                 _descriptionController.clear();
@@ -120,16 +127,52 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
         );
       }
     ); 
+    FocusScope.of(context).unfocus();
   }
 
   void _deleteExpense(Expense expense) async {
-  final allExpenses = await FileStorage.loadExpenses();
-  allExpenses.removeWhere((e) => 
-    e.date == expense.date &&
-    e.description == expense.description &&
-    e.amount == expense.amount);
-    await FileStorage.saveExpenses(allExpenses);
-    _loadDailyExpenses();
+    FocusScope.of(context).unfocus();
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Confirm deletetion'),
+          content: Text('Are you sure want to delete this expense: "${expense.description}" with amount \$${expense.amount.toStringAsFixed(2)}'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text('Delete'),
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.red,
+              ),
+            ),
+          ],
+        );
+      }
+    );
+
+    if (shouldDelete == true) {
+      final allExpenses = await FileStorage.loadExpenses();
+      allExpenses.removeWhere((e) => 
+        e.date == expense.date &&
+        e.description == expense.description &&
+        e.amount == expense.amount
+      );
+      FileStorage.saveExpenses(allExpenses);
+      _loadDailyExpenses();
+      FocusScope.of(context).unfocus();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Expense "${expense.description}" deleted successfully!'),
+          duration: Duration(seconds: 3),
+        )
+      );
+      
+    }
   }
 
   @override
