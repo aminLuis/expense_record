@@ -3,9 +3,13 @@ import 'package:flutter/material.dart';
 
 class ExpenseListItem extends StatelessWidget {
   final Expense expense;
+  final VoidCallback onDelete;
+  final VoidCallback onEdit;
 
   ExpenseListItem({
-    required this.expense
+    required this.expense,
+    required this.onDelete,
+    required this.onEdit
   });
 
   @override
@@ -13,9 +17,27 @@ class ExpenseListItem extends StatelessWidget {
     return ListTile(
       title: Text(expense.description),
       subtitle: Text(
-        '\$${expense.amount.toStringAsFixed(2)}',
-        style: TextStyle(color: Colors.blueGrey),
+        '${expense.date.toLocal().toString().split(' ')[0]} - \$${expense.amount.toStringAsFixed(2)}',
       ),
+      trailing: PopupMenuButton<String>(
+        onSelected: (value) {
+          if (value == 'edit'){
+            onEdit();
+          } else if (value == 'delete') {
+            onDelete();
+          }
+        },
+        itemBuilder: (BuildContext context) => [
+          PopupMenuItem(
+            value: 'edit',
+            child: Text('Edit'),
+          ),
+           PopupMenuItem(
+            value: 'delete',
+            child: Text('Delete'),
+          )
+        ]
+      )
     );
   }
 

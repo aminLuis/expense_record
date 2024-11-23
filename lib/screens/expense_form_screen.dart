@@ -60,6 +60,78 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
     _loadDailyExpenses();
   }    
 
+  void _editExpense(Expense expense) {
+    _descriptionController.text = expense.description;
+    _amountController.text = expense.amount.toString();
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Edit expense'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: _descriptionController,
+                decoration: InputDecoration(labelText: 'Description'),
+              ),
+              TextField(
+                controller: _amountController,
+                decoration: InputDecoration(labelText: 'Amount'),
+                keyboardType: TextInputType.number
+              )
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () async {
+                final description = _descriptionController.text;
+                final amount = double.tryParse(_amountController.text) ?? 0.0;
+
+                if (description.isNotEmpty && amount > 0) {
+                  final allExpenses = await FileStorage.loadExpenses();
+                  final index = allExpenses.indexWhere((e)=> 
+                    e.date == expense.date &&
+                    e.description == expense.description &&
+                    e.amount == expense.amount
+                  );
+                  print('Index encontrado: ${index}');
+                  if (index != -1) {
+                    allExpenses[index] = Expense(
+                      date: expense.date,
+                      description: description,
+                      amount: amount
+                    );
+                    await FileStorage.saveExpenses(allExpenses);
+                    _loadDailyExpenses();
+                  }
+                }
+                _descriptionController.clear();
+                _amountController.clear();
+                Navigator.pop(context);
+              },
+              child: Text('Save'),
+            ),
+          ],
+        );
+      }
+    ); 
+  }
+
+  void _deleteExpense(Expense expense) async {
+  final allExpenses = await FileStorage.loadExpenses();
+  allExpenses.removeWhere((e) => 
+    e.date == expense.date &&
+    e.description == expense.description &&
+    e.amount == expense.amount);
+    await FileStorage.saveExpenses(allExpenses);
+    _loadDailyExpenses();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -94,7 +166,11 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
                 itemCount: _dailyExpenses.length,
                 itemBuilder: (context, index) {
                   final expense = _dailyExpenses[index];
-                  return ExpenseListItem(expense: expense);
+                  return ExpenseListItem(
+                    expense: expense,
+                    onEdit: () => _editExpense(expense),
+                    onDelete: () => _deleteExpense(expense),
+                  );
                 }
               ),
             ),

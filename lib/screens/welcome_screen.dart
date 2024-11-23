@@ -1,5 +1,4 @@
 import 'package:expense_record/screens/calendar_screen.dart';
-import 'package:expense_record/widgets/calendar_widget.dart';
 import 'package:flutter/material.dart';
 
 class WelcomeScreen extends StatelessWidget {
