@@ -52,13 +52,27 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
     );
 
     final expenses = await FileStorage.loadExpenses();
+    final currentBalance = await FileStorage.loadGeneralBalance();
+
+    if (currentBalance < amount) {
+       ScaffoldMessenger.of(context).showSnackBar(
+       SnackBar(content: Text('Insufficient balance to add this expense.')),
+    );
+    return;
+    }
+
     expenses.add(newExpense);
     await FileStorage.saveExpenses(expenses);
+    await FileStorage.saveGeneralBalance(currentBalance - amount);
 
     _descriptionController.clear();
     _amountController.clear();
     _loadDailyExpenses();
     FocusScope.of(context).unfocus();
+
+    ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(content: Text('Expense added successfully.')),
+  );
   }    
 
   void _editExpense(Expense expense) {
