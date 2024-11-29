@@ -75,6 +75,24 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
   );
   }    
 
+  void _restoreBalance(double amount) async {
+    final currentBalance = await FileStorage.loadGeneralBalance();
+    double beforeBalance = currentBalance + amount;
+    await FileStorage.saveGeneralBalance(beforeBalance);
+  }
+
+  void _subtractBalance(double amount) async {
+    final currentBalance = await FileStorage.loadGeneralBalance();
+    if (currentBalance >= amount) {
+      double newBalance = currentBalance - amount;
+      await FileStorage.saveGeneralBalance(newBalance);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+       SnackBar(content: Text('Insufficient balance to add this expense.')),
+      );
+    }
+  }
+
   void _editExpense(Expense expense) {
     _descriptionController.text = expense.description;
     _amountController.text = expense.amount.toString();
@@ -116,12 +134,14 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
                   );
                   print('Index encontrado: ${index}');
                   if (index != -1) {
+                    _restoreBalance(allExpenses[index].amount);
                     allExpenses[index] = Expense(
                       date: expense.date,
                       description: description,
                       amount: amount
                     );
                     await FileStorage.saveExpenses(allExpenses);
+                    _subtractBalance(amount);
                     _loadDailyExpenses();
                     ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
@@ -176,6 +196,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
         e.description == expense.description &&
         e.amount == expense.amount
       );
+      _restoreBalance(expense.amount);
       FileStorage.saveExpenses(allExpenses);
       _loadDailyExpenses();
       FocusScope.of(context).unfocus();

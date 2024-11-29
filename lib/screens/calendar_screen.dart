@@ -1,4 +1,6 @@
+import 'package:expense_record/models/expense.dart';
 import 'package:expense_record/screens/expense_form_screen.dart';
+import 'package:expense_record/services/excel_handler.dart';
 import 'package:expense_record/services/file_storage.dart';
 import 'package:expense_record/widgets/calendar_widget.dart';
 import 'package:flutter/material.dart';
@@ -40,11 +42,19 @@ class _CalendarScreenState extends State<CalendarScreen> {
     });
   }
 
-  void _setGeneralBalance(double balance) {
-    setState(() {
-      _generalBalance = balance;
-    });
-    FileStorage.saveGeneralBalance(balance);
+  void _setGeneralBalance(double balance) async {
+    final oldBalance = await FileStorage.loadGeneralBalance();
+    if (oldBalance == 0) {
+       setState(() {
+        _generalBalance = balance;
+      });
+      FileStorage.saveGeneralBalance(balance);
+    } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Para asignar un saldo debe estar en 0.0')),
+        );
+    }
+   
   }
 
   void _showSetBalanceDialog() {
@@ -74,17 +84,24 @@ class _CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
-  void _onDateSelected(DateTime selectedDate) {
+  void _onDateSelected(DateTime selectedDate) async {
+    double balance = await FileStorage.loadGeneralBalance();
     if (_selectedDate.year == selectedDate.year) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => ExpenseFormScreen(date: selectedDate),
-        ),
-      ).then((_) {
-        _loadMonthlyTotal();
-        _loadGeneralBalance();
-      });
+      if (balance > 0) {
+          Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ExpenseFormScreen(date: selectedDate),
+          ),
+        ).then((_) {
+          _loadMonthlyTotal();
+          _loadGeneralBalance();
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Insufficient balance to add expenses.')),
+        );
+      }
     } else {
       setState(() {
         _selectedDate = selectedDate;
@@ -99,11 +116,63 @@ class _CalendarScreenState extends State<CalendarScreen> {
     });
   } 
 
+  Future<void> _exportData() async {
+    final expenses = await FileStorage.loadExpenses();
+    if (expenses.isNotEmpty) {
+        await ExcelHandler.exportToExcel(expenses, _generalBalance);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Data exported successfully.')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Aún no hay gastos registrados.')),
+      );
+    }
+    
+  }
+
+Future<void> _importData() async {
+    final expenses = await FileStorage.loadExpenses();
+    final balance = await FileStorage.loadGeneralBalance();
+
+    if (expenses.isEmpty && balance == 0) {
+       final result = await ExcelHandler.importFromExcel();
+       final importedExpenses = result['expenses'] as List<Expense>;
+       final importedBalance = result['balance'] as double;
+
+       await FileStorage.saveExpenses(importedExpenses);
+       await FileStorage.saveGeneralBalance(importedBalance);
+
+       _loadMonthlyTotal();
+       _loadGeneralBalance();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Data imported successfully')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Para importar data debe tener gastos y saldo en cero')),
+      );
+    }
+
+   
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text('Calendar'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.file_download),
+            onPressed: _exportData,
+          ),
+          IconButton(
+            icon: Icon(Icons.upload_file),
+            onPressed: _importData,
+          ),
+        ],
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -159,6 +228,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
             _showSetBalanceDialog();
           } else if (index == 1) {
             // Lógica futura para configuraciones adicionales
+            Navigator.pushNamed(context, '/settings');
           }
         }
       ),

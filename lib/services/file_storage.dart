@@ -6,12 +6,12 @@ import 'package:path_provider/path_provider.dart';
 class FileStorage {
   static Future<File> _getFile() async {
     final directory = await getApplicationDocumentsDirectory();
-    return File('${directory!.path}/expenses.json');
+    return File('${directory.path}/expenses.json');
   }
 
   static Future<File> _getBalanceFile() async {
     final directory = await getApplicationDocumentsDirectory();
-    return File('${directory!.path}/general_balance.json');
+    return File('${directory.path}/general_balance.json');
   }
 
   static Future<List<Expense>> loadExpenses() async {
