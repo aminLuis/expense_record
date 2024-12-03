@@ -1,5 +1,6 @@
 import 'package:expense_record/models/expense.dart';
 import 'package:expense_record/screens/expense_list_item.dart';
+import 'package:expense_record/services/FormatNumber.dart';
 import 'package:expense_record/services/file_storage.dart';
 import 'package:flutter/material.dart';
 import 'dart:core';
@@ -20,7 +21,32 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
   double _totalDailyExpenses = 0.0;
   String? _selectedCategory;
 
-  final List<String> _categories = ['Comida', 'Transporte', 'Mascota', 'Ocio', 'Servicio', 'Aseo', 'Aseo personal'];
+  final List<String> _categories = [
+  'Hogar',
+  'Comida', 
+  'Transporte', 
+  'Mascota', 
+  'Ocio', 
+  'Servicio', 
+  'Aseo', 
+  'Aseo personal'
+  'Producto de belleza',
+  'Arriendo',
+  'Crédito',
+  'Vestimenta',
+  'Diversión',
+  'Medicamento',
+  'Salón de belleza',
+  'Barbería',
+  'Combustible',
+  'Refacciones vehículo',
+  'Mantenimiento vehículo',
+  'Seguro vehículo',
+  'Tecnomecánica',
+  'Impuesto vehicular',
+  'Multa',
+  'Otros'
+  ];
 
   @override
   void initState() {
@@ -314,7 +340,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
             ),
             SizedBox(height: 10),
             Text(
-              'Total: \$${_totalDailyExpenses.toStringAsFixed(2)}',
+              'Total: \$${Formatnumber.formatNumber(_totalDailyExpenses)}',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             )
           ],

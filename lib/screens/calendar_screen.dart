@@ -1,6 +1,7 @@
 import 'package:expense_record/models/expense.dart';
 import 'package:expense_record/screens/expense_form_screen.dart';
 import 'package:expense_record/screens/settings_screen.dart';
+import 'package:expense_record/services/FormatNumber.dart';
 import 'package:expense_record/services/excel_handler.dart';
 import 'package:expense_record/services/file_storage.dart';
 import 'package:expense_record/widgets/calendar_widget.dart';
@@ -26,6 +27,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
   double _generalBalance = 0.0;
   List<Expense> _monthlyExpenses = [];
   List<int> _daysWithExpenses = [];
+  double initBalance = 0.0;
 
   @override
   void initState() {
@@ -33,6 +35,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
     _loadMonthlyTotal();
     _loadGeneralBalance();
     _loadMonthlyExpenses();
+    _initBalance();
   }
 
   void _loadMonthlyTotal() async {
@@ -180,6 +183,7 @@ Future<void> _importData() async {
 
        _loadMonthlyTotal();
        _loadGeneralBalance();
+       _initBalance();
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Data imported successfully')),
@@ -204,6 +208,19 @@ Future<void> _importData() async {
     _loadMonthlyTotal();
     _loadGeneralBalance();
     _loadMonthlyExpenses();
+    _initBalance();
+  }
+
+  void _initBalance() async {
+    final expenses = await FileStorage.loadExpenses();
+    final balance = await FileStorage.loadGeneralBalance();
+    double totalExpenses = 0.0;
+    expenses.forEach((exp) {
+      totalExpenses = totalExpenses + exp.amount;
+    });
+    setState(() {
+      initBalance = totalExpenses + balance;
+    });
   }
 
   @override
@@ -236,23 +253,34 @@ Future<void> _importData() async {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Total spent in ${_selectedMonth.month}/${_selectedMonth.year}:',
+                    'Total gastos en ${_selectedMonth.month}/${_selectedMonth.year}:',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   SizedBox(height: 5),
                   Text(
-                    '\$${_monthlyTotal.toStringAsFixed(2)}',
+                    '\$${Formatnumber.formatNumber(_monthlyTotal)}',
                     style: TextStyle(fontSize: 22, color: Colors.blue),
                   ),
                   SizedBox(height: 20),
                   Text(
-                    'General balance:',
+                    'Saldo general:',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   SizedBox(height: 5),
                   Text(
-                    '\$${_generalBalance.toStringAsFixed(2)}',
+                    '\$${Formatnumber.formatNumber(_generalBalance)}',
                     style: TextStyle(fontSize: 22, color: Colors.green),
+                  ),
+                  Divider(),
+                  SizedBox(height: 25),
+                  Text(
+                    'Saldo inicial',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 5),
+                  Text(
+                    '\$${Formatnumber.formatNumber(initBalance)}',
+                    style: TextStyle(fontSize: 22, color: Colors.purple),
                   ),
                 ],
               ),
@@ -275,7 +303,7 @@ Future<void> _importData() async {
                 return ListTile(
                   title: Text('Día $day'),
                   subtitle:
-                      Text('Total: \$${dailyTotal.toStringAsFixed(2)}'),
+                      Text('Total: \$${Formatnumber.formatNumber(dailyTotal)}'),
                   leading: Icon(Icons.event_note),
                 );
               },

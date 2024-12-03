@@ -1,4 +1,5 @@
 import 'package:expense_record/models/expense.dart';
+import 'package:expense_record/services/FormatNumber.dart';
 import 'package:flutter/material.dart';
 
 class ExpenseListItem extends StatelessWidget {
@@ -17,7 +18,7 @@ class ExpenseListItem extends StatelessWidget {
     return ListTile(
       title: Text(expense.description),
       subtitle: Text(
-        '${expense.date.toLocal().toString().split(' ')[0]} - \$${expense.amount.toStringAsFixed(2)}\n${expense.category}',
+        '${expense.date.toLocal().toString().split(' ')[0]} - \$${Formatnumber.formatNumber(expense.amount)}\n${expense.category}',
       ),
       trailing: PopupMenuButton<String>(
         onSelected: (value) {
