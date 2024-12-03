@@ -18,6 +18,9 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
   final _amountController = TextEditingController();
   List<Expense> _dailyExpenses = [];
   double _totalDailyExpenses = 0.0;
+  String? _selectedCategory;
+
+  final List<String> _categories = ['Comida', 'Transporte', 'Mascota', 'Ocio', 'Servicio', 'Aseo', 'Aseo personal'];
 
   @override
   void initState() {
@@ -43,12 +46,18 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
     final description = _descriptionController.text;
     final amount = double.tryParse(_amountController.text) ?? 0.0;
 
-    if (description.isEmpty || amount <= 0) return;
+    if (description.isEmpty || amount <= 0 || _selectedCategory == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Por favor llene todos los campos y seleccione una categoría.')),
+      );
+      return;
+    } 
 
     final newExpense = Expense(
       date: widget.date,
       description: description,
-      amount: amount
+      amount: amount,
+      category: _selectedCategory!
     );
 
     final expenses = await FileStorage.loadExpenses();
@@ -56,7 +65,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
 
     if (currentBalance < amount) {
        ScaffoldMessenger.of(context).showSnackBar(
-       SnackBar(content: Text('Insufficient balance to add this expense.')),
+       SnackBar(content: Text('Saldo insuficiente para agregar este gasto.')),
     );
     return;
     }
@@ -67,11 +76,14 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
 
     _descriptionController.clear();
     _amountController.clear();
+     setState(() {
+      _selectedCategory = null;
+    });
     _loadDailyExpenses();
     FocusScope.of(context).unfocus();
 
     ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text('Expense added successfully.')),
+    SnackBar(content: Text('Gasto agregado exitosamente.')),
   );
   }    
 
@@ -96,6 +108,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
   void _editExpense(Expense expense) {
     _descriptionController.text = expense.description;
     _amountController.text = expense.amount.toString();
+    _selectedCategory = expense.category;
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -112,33 +125,56 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
                 controller: _amountController,
                 decoration: InputDecoration(labelText: 'Amount'),
                 keyboardType: TextInputType.number
-              )
+              ),
+              DropdownButtonFormField(
+              value: _selectedCategory,
+              items: _categories
+                  .map((category) => DropdownMenuItem(
+                        value: category,
+                        child: Text(category),
+                      ))
+                  .toList(),
+              decoration: InputDecoration(labelText: 'Category'),
+              onChanged: (value) {
+                setState(() {
+                  _selectedCategory = value as String?;
+                });
+              },
+            ),
             ],
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text('Cancel'),
+              onPressed: () {
+                 _descriptionController.clear();
+                _amountController.clear();
+                 setState(() {
+                  _selectedCategory = null;
+                });
+              },
+              child: Text('Cancelar'),
+              
             ),
             TextButton(
               onPressed: () async {
                 final description = _descriptionController.text;
                 final amount = double.tryParse(_amountController.text) ?? 0.0;
-
+               
                 if (description.isNotEmpty && amount > 0) {
                   final allExpenses = await FileStorage.loadExpenses();
                   final index = allExpenses.indexWhere((e)=> 
                     e.date == expense.date &&
                     e.description == expense.description &&
-                    e.amount == expense.amount
+                    e.amount == expense.amount &&
+                    e.category == expense.category
                   );
-                  print('Index encontrado: ${index}');
                   if (index != -1) {
                     _restoreBalance(allExpenses[index].amount);
                     allExpenses[index] = Expense(
                       date: expense.date,
                       description: description,
-                      amount: amount
+                      amount: amount,
+                      category: _selectedCategory.toString(),
                     );
                     await FileStorage.saveExpenses(allExpenses);
                     _subtractBalance(amount);
@@ -153,6 +189,9 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
                 }
                 _descriptionController.clear();
                 _amountController.clear();
+                 setState(() {
+                  _selectedCategory = null;
+                });
                 Navigator.pop(context);
               },
               child: Text('Save'),
@@ -226,6 +265,27 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
               controller: _amountController,
               decoration: InputDecoration(labelText: 'Amount'),
               keyboardType: TextInputType.number,
+            ),
+            DropdownButtonFormField(
+              value: _selectedCategory,
+              items: _categories
+                      .map((category) => DropdownMenuItem(
+                        value: category,
+                        child: Text(category),
+                      ))
+                    .toList(),
+              decoration: InputDecoration(labelText: 'Categoría'),
+              onChanged: (value) {
+                setState(() {
+                  _selectedCategory = value;
+                });
+              },
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Please select a category';
+                }
+                return null;
+              },
             ),
             SizedBox(height: 20),
             ElevatedButton(

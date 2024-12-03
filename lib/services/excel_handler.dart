@@ -2,44 +2,52 @@ import 'dart:io';
 
 import 'package:excel/excel.dart';
 import 'package:expense_record/models/expense.dart';
+import 'package:expense_record/services/generateAlphanumeric.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:path/path.dart' as p;
 
 class ExcelHandler {
 
-  static Future<void> exportToExcel(List expenses, double balance) async {
-    try {
-      final excel = Excel.createExcel();
+  static Future<void> exportToExcel(List<Expense> expenses, double balance) async {
+  try {
+    final excel = Excel.createExcel();
 
-      // Hoja de gastos
-      final sheet = excel['Expenses'];
-      sheet.appendRow(['Date', 'Description', 'Amount']);
-      for (var expense in expenses) {
-        sheet.appendRow([expense.date.toString(), expense.description, expense.amount]);
-      }
-
-      // Hoja de saldo
-      final balanceSheet = excel['Balance'];
-      balanceSheet.appendRow(['General Balance']);
-      balanceSheet.appendRow([balance]);
-
-      // Guardar en carpeta Downloads
-      final directory = Directory('/storage/emulated/0/Download');
-      if (!directory.existsSync()) {
-        directory.createSync(recursive: true);
-      }
-
-      final filePath = p.join(directory.path, 'expenses_balance.xlsx');
-      final file = File(filePath);
-      file.writeAsBytesSync(excel.save()!);
-
-      // Abrir archivo después de exportar
-      OpenFilex.open(filePath);
-    } catch (e) {
-      throw Exception('Error exporting Excel file: $e');
+    // Hoja de gastos
+    final sheet = excel['Expenses'];
+    sheet.appendRow(['Date', 'Description', 'Amount', 'Category']);
+    for (var expense in expenses) {
+      sheet.appendRow([
+        expense.date.toIso8601String(),
+        expense.description,
+        expense.amount,
+        expense.category ?? 'Uncategorized', // Manejar valores nulos en category
+      ]);
     }
+
+    // Hoja de saldo
+    final balanceSheet = excel['Balance'];
+    balanceSheet.appendRow(['General Balance']);
+    balanceSheet.appendRow([balance]);
+
+    // Guardar en carpeta Downloads
+    final directory = Directory('/storage/emulated/0/Download');
+    if (!directory.existsSync()) {
+      directory.createSync(recursive: true);
+    }
+    String valueAlphanumeric = Generatealphanumeric.generateAlphanumeric(10);
+    final filePath = p.join(directory.path, '${valueAlphanumeric}_expenses_balance.xlsx');
+    final file = File(filePath);
+    file.writeAsBytesSync(excel.save()!);
+
+    // Abrir archivo después de exportar
+    OpenFilex.open(filePath);
+  } catch (e) {
+    print('Error exporting Excel file: $e');
+    throw Exception('Error exporting Excel file: $e');
   }
+}
+
 
   static Future<Map<String, dynamic>> importFromExcel() async {
   try {
@@ -62,17 +70,24 @@ class ExcelHandler {
       var expensesSheet = excel['Expenses'];
       if (expensesSheet != null) {
         for (int i = 1; i < expensesSheet.rows.length; i++) {
-          var row = expensesSheet.rows[i];
+        var row = expensesSheet.rows[i];
 
-          // Validar valores de las celdas
-          var date = DateTime.tryParse(row[0]?.value?.toString() ?? '');
-          var description = row[1]?.value?.toString() ?? '';
-          var amount = double.tryParse(row[2]?.value?.toString() ?? '0') ?? 0.0;
+        // Validar valores de las celdas con un manejo más robusto
+        var date = DateTime.tryParse(row[0]?.value?.toString() ?? '');
+        var description = row[1]?.value?.toString() ?? '';
+        var amount = double.tryParse(row[2]?.value?.toString() ?? '0') ?? 0.0;
+        var category = row.length > 3 ? row[3]?.value?.toString() ?? 'Uncategorized' : 'Uncategorized';
 
-          if (date != null && description.isNotEmpty) {
-            expenses.add(Expense(date: date, description: description, amount: amount));
-          }
+        if (date != null && description.isNotEmpty) {
+          expenses.add(Expense(
+            date: date,
+            description: description,
+            amount: amount,
+            category: category,
+          ));
         }
+      }
+
       }
 
       // Leer hoja de balance ('Balance')

@@ -1,11 +1,20 @@
 import 'package:expense_record/models/expense.dart';
 import 'package:expense_record/screens/expense_form_screen.dart';
+import 'package:expense_record/screens/settings_screen.dart';
 import 'package:expense_record/services/excel_handler.dart';
 import 'package:expense_record/services/file_storage.dart';
 import 'package:expense_record/widgets/calendar_widget.dart';
 import 'package:flutter/material.dart';
 
 class CalendarScreen extends StatefulWidget {
+  final ThemeMode themeMode;
+  final Function(ThemeMode) onThemeModeChanged;
+
+  CalendarScreen({
+    required this.themeMode,
+    required this.onThemeModeChanged,
+  });
+
   @override
   _CalendarScreenState createState() => _CalendarScreenState();
 }
@@ -15,12 +24,15 @@ class _CalendarScreenState extends State<CalendarScreen> {
   double _monthlyTotal = 0.0;
   DateTime _selectedDate = DateTime.now();
   double _generalBalance = 0.0;
+  List<Expense> _monthlyExpenses = [];
+  List<int> _daysWithExpenses = [];
 
   @override
   void initState() {
     super.initState();
     _loadMonthlyTotal();
-     _loadGeneralBalance();
+    _loadGeneralBalance();
+    _loadMonthlyExpenses();
   }
 
   void _loadMonthlyTotal() async {
@@ -96,6 +108,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
         ).then((_) {
           _loadMonthlyTotal();
           _loadGeneralBalance();
+          _loadMonthlyExpenses();
         });
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -109,10 +122,32 @@ class _CalendarScreenState extends State<CalendarScreen> {
     }
   }
 
+  void _loadMonthlyExpenses() async {
+    final allExpenses = await FileStorage.loadExpenses();
+
+    setState(() {
+      _monthlyExpenses = allExpenses.where((expense) {
+        return expense.date.year == _selectedMonth.year &&
+            expense.date.month == _selectedMonth.month;
+      }).toList();
+
+      _monthlyTotal = _monthlyExpenses.fold(
+          0.0, (sum, expense) => sum + expense.amount);
+
+      // Generar la lista de días únicos con gastos
+      _daysWithExpenses = _monthlyExpenses
+          .map((expense) => expense.date.day)
+          .toSet()
+          .toList()
+        ..sort();
+    });
+  }
+
   void _onMonthChanged(DateTime newDate) {
     setState(() {
       _selectedMonth = DateTime(newDate.year, newDate.month);
       _loadMonthlyTotal();
+      _loadMonthlyExpenses();
     });
   } 
 
@@ -154,83 +189,119 @@ Future<void> _importData() async {
         SnackBar(content: Text('Para importar data debe tener gastos y saldo en cero')),
       );
     }
+  }
 
-   
+  void _navigateToSettings() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SettingsScreen(
+         onThemeModeChanged: widget.onThemeModeChanged, // Usar el callback pasado
+          themeMode: widget.themeMode, // Pasar el tema actual
+        ),
+      ),
+    );
+    _loadMonthlyTotal();
+    _loadGeneralBalance();
+    _loadMonthlyExpenses();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Calendar'),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.file_download),
-            onPressed: _exportData,
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            pinned: true,
+            floating: false,
+            expandedHeight: 100.0,
+            flexibleSpace: FlexibleSpaceBar(
+              title: Text('Calendar'),
+            ),
+            actions: [
+              IconButton(
+                icon: Icon(Icons.file_download),
+                onPressed: _exportData,
+              ),
+              IconButton(
+                icon: Icon(Icons.upload_file),
+                onPressed: _importData,
+              ),
+            ],
           ),
-          IconButton(
-            icon: Icon(Icons.upload_file),
-            onPressed: _importData,
-          ),
-        ],
-      ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding (
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Total spent in ${_selectedMonth.month}/${_selectedMonth.year}:',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                SizedBox(height: 5),
-                Text(
-                  '\$${_monthlyTotal.toStringAsFixed(2)}',
-                  style: TextStyle(fontSize: 22, color: Colors.blue),
-                ),
-                SizedBox(height: 20),
-                Text(
-                  'General balance',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                SizedBox(height: 5),
-                Text(
-                  '\$${_generalBalance.toStringAsFixed(2)}',
-                  style: TextStyle(fontSize: 22, color: Colors.green),
-                )
-              ],
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Total spent in ${_selectedMonth.month}/${_selectedMonth.year}:',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 5),
+                  Text(
+                    '\$${_monthlyTotal.toStringAsFixed(2)}',
+                    style: TextStyle(fontSize: 22, color: Colors.blue),
+                  ),
+                  SizedBox(height: 20),
+                  Text(
+                    'General balance:',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 5),
+                  Text(
+                    '\$${_generalBalance.toStringAsFixed(2)}',
+                    style: TextStyle(fontSize: 22, color: Colors.green),
+                  ),
+                ],
+              ),
             ),
           ),
-          Expanded(
+          SliverToBoxAdapter(
             child: CalendarWidget(
               onMonthChanged: _onMonthChanged,
               onDateSelected: _onDateSelected,
             ),
-            )
+          ),
+          SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (context, index) {
+                final day = _daysWithExpenses[index];
+                final dailyTotal = _monthlyExpenses
+                    .where((expense) => expense.date.day == day)
+                    .fold(0.0, (sum, expense) => sum + expense.amount);
+
+                return ListTile(
+                  title: Text('Día $day'),
+                  subtitle:
+                      Text('Total: \$${dailyTotal.toStringAsFixed(2)}'),
+                  leading: Icon(Icons.event_note),
+                );
+              },
+              childCount: _daysWithExpenses.length,
+            ),
+          ),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
         items: [
           BottomNavigationBarItem(
             icon: Icon(Icons.account_balance_wallet),
-            label: 'Set balance'
+            label: 'Set balance',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.settings),
-            label: 'Settings'
+            label: 'Settings',
           ),
         ],
         onTap: (index) {
           if (index == 0) {
             _showSetBalanceDialog();
           } else if (index == 1) {
-            // Lógica futura para configuraciones adicionales
-            Navigator.pushNamed(context, '/settings');
+            _navigateToSettings();
           }
-        }
+        },
       ),
     );
   }

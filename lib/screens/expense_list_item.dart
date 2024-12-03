@@ -17,7 +17,7 @@ class ExpenseListItem extends StatelessWidget {
     return ListTile(
       title: Text(expense.description),
       subtitle: Text(
-        '${expense.date.toLocal().toString().split(' ')[0]} - \$${expense.amount.toStringAsFixed(2)}',
+        '${expense.date.toLocal().toString().split(' ')[0]} - \$${expense.amount.toStringAsFixed(2)}\n${expense.category}',
       ),
       trailing: PopupMenuButton<String>(
         onSelected: (value) {
