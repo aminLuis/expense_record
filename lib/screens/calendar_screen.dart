@@ -2,18 +2,19 @@ import 'package:expense_record/models/expense.dart';
 import 'package:expense_record/screens/expense_form_screen.dart';
 import 'package:expense_record/screens/settings_screen.dart';
 import 'package:expense_record/services/FormatNumber.dart';
+import 'package:expense_record/services/Format_date.dart';
 import 'package:expense_record/services/excel_handler.dart';
 import 'package:expense_record/services/file_storage.dart';
 import 'package:expense_record/widgets/calendar_widget.dart';
 import 'package:flutter/material.dart';
 
 class CalendarScreen extends StatefulWidget {
-  final ThemeMode themeMode;
   final Function(ThemeMode) onThemeModeChanged;
+  final ThemeMode themeMode;
 
   CalendarScreen({
-    required this.themeMode,
     required this.onThemeModeChanged,
+    required this.themeMode,
   });
 
   @override
@@ -253,7 +254,8 @@ Future<void> _importData() async {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Total gastos en ${_selectedMonth.month}/${_selectedMonth.year}:',
+                    // 'Total gastos en ${_selectedMonth.month}/${_selectedMonth.year}:',
+                    'Total gastos en ${FormatDate.shortDateFormatEnd(_selectedMonth)}',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   SizedBox(height: 5),
@@ -301,7 +303,7 @@ Future<void> _importData() async {
                     .fold(0.0, (sum, expense) => sum + expense.amount);
 
                 return ListTile(
-                  title: Text('Día $day'),
+                  title: Text('Día '' $day'),
                   subtitle:
                       Text('Total: \$${Formatnumber.formatNumber(dailyTotal)}'),
                   leading: Icon(Icons.event_note),

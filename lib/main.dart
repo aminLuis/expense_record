@@ -2,8 +2,10 @@ import 'package:expense_record/screens/settings_screen.dart';
 import 'package:expense_record/screens/welcome_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
-void main() {
+void main() async{
+  await initializeDateFormatting('es', null);
   runApp(ExpenseTrackerApp());
 }
 
@@ -14,7 +16,7 @@ class ExpenseTrackerApp extends StatefulWidget {
 
 class _ExpenseTrackerAppState extends State<ExpenseTrackerApp> {
 
-  ThemeMode _themeMode = ThemeMode.system; // Modo de tema inicial
+  ThemeMode _themeMode = ThemeMode.light; // Modo de tema inicial
 
   @override
   void initState() {
@@ -36,7 +38,6 @@ class _ExpenseTrackerAppState extends State<ExpenseTrackerApp> {
   }
 
   void _updateThemeMode(ThemeMode themeMode) {
-    print('Theme mode updated to: $themeMode');
     setState(() {
       _themeMode = themeMode;
     });
@@ -52,8 +53,8 @@ class _ExpenseTrackerAppState extends State<ExpenseTrackerApp> {
       themeMode: _themeMode,
       routes: {
         '/': (context) => WelcomeScreen(
-              themeMode: _themeMode, // Pasar el tema actual
               onThemeModeChanged: _updateThemeMode, // Pasar el método para cambiar tema
+              themeMode: _themeMode, // Pasar el tema actual
             ),
         '/settings': (context) =>
             SettingsScreen(onThemeModeChanged: _updateThemeMode, themeMode: _themeMode),

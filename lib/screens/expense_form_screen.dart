@@ -267,7 +267,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
       FocusScope.of(context).unfocus();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Expense "${expense.description}" deleted successfully!'),
+          content: Text('Gasto "${expense.description}" eliminado exitosamente!'),
           duration: Duration(seconds: 3),
         )
       );
@@ -316,16 +316,16 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
             SizedBox(height: 20),
             ElevatedButton(
               onPressed: _saveExpense,
-              child: Text('Save expense'),
+              child: Text('Guardar gasto'),
             ),
             Divider(height: 40),
-            Text('Daily expense',
+            Text('Gastos diarios',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 10),
             Expanded(
               child: _dailyExpenses.isEmpty
-              ? Center(child: Text('No expenses for this day'))
+              ? Center(child: Text('No hay gastos en este día'))
               : ListView.builder(
                 itemCount: _dailyExpenses.length,
                 itemBuilder: (context, index) {

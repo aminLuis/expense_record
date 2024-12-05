@@ -2,12 +2,12 @@ import 'package:expense_record/screens/calendar_screen.dart';
 import 'package:flutter/material.dart';
 
 class WelcomeScreen extends StatelessWidget {
-   final ThemeMode themeMode;
   final Function(ThemeMode) onThemeModeChanged;
+  final ThemeMode themeMode;
 
   WelcomeScreen({
-    required this.themeMode,
     required this.onThemeModeChanged,
+    required this.themeMode,
   });
 
   @override
@@ -38,8 +38,8 @@ class WelcomeScreen extends StatelessWidget {
                 Navigator.pushReplacement(
                   context, 
                   MaterialPageRoute(builder: (context) => CalendarScreen(
-                     themeMode: themeMode, // Pasar el tema actual
                      onThemeModeChanged: onThemeModeChanged,
+                     themeMode: themeMode,
                   )),
                 );
               },

@@ -150,7 +150,6 @@ class SettingsScreen extends StatelessWidget {
               ],
               onChanged: (newMode) {
                 if (newMode != null) {
-                  print('Dropdown selected: $newMode');
                   onThemeModeChanged(newMode);
                 }
               },
