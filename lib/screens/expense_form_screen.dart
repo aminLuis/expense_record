@@ -29,7 +29,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
   'Ocio', 
   'Servicio', 
   'Aseo', 
-  'Aseo personal'
+  'Aseo personal',
   'Producto de belleza',
   'Arriendo',
   'Crédito',
@@ -45,6 +45,8 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
   'Tecnomecánica',
   'Impuesto vehicular',
   'Multa',
+  'Viajes',
+  'Inversión',
   'Otros'
   ];
 

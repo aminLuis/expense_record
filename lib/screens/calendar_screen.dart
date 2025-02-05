@@ -1,5 +1,6 @@
 import 'package:expense_record/models/expense.dart';
 import 'package:expense_record/screens/expense_form_screen.dart';
+import 'package:expense_record/screens/report_screen.dart';
 import 'package:expense_record/screens/settings_screen.dart';
 import 'package:expense_record/services/FormatNumber.dart';
 import 'package:expense_record/services/Format_date.dart';
@@ -212,6 +213,19 @@ Future<void> _importData() async {
     _initBalance();
   }
 
+  void _navigateToReport() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ReportScreen(),
+      ),
+    );
+    _loadMonthlyTotal();
+    _loadGeneralBalance();
+    _loadMonthlyExpenses();
+    _initBalance();
+  }
+
   void _initBalance() async {
     final expenses = await FileStorage.loadExpenses();
     final balance = await FileStorage.loadGeneralBalance();
@@ -318,17 +332,23 @@ Future<void> _importData() async {
         items: [
           BottomNavigationBarItem(
             icon: Icon(Icons.account_balance_wallet),
-            label: 'Set balance',
+            label: 'Asignar saldo',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.bar_chart),
+            label: 'Resumen',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.settings),
-            label: 'Settings',
+            label: 'Configuraciones',
           ),
         ],
         onTap: (index) {
           if (index == 0) {
             _showSetBalanceDialog();
           } else if (index == 1) {
+            _navigateToReport();
+          } else if (index == 2) {
             _navigateToSettings();
           }
         },
